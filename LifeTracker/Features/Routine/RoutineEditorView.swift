@@ -20,7 +20,7 @@ struct RoutineEditorView: View {
         _name = State(initialValue: routine?.name ?? "")
         _kind = State(initialValue: routine?.kind ?? .custom)
         _notes = State(initialValue: routine?.notes ?? "")
-        _steps = State(initialValue: (routine?.orderedSteps ?? []).map(DraftStep.init))
+        _steps = State(initialValue: (routine?.orderedSteps ?? []).map { DraftStep(from: $0) })
     }
 
     var body: some View {

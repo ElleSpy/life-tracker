@@ -1,18 +1,41 @@
 import SwiftUI
 
-/// Sheet for adding a recipe, with editable ingredient and step lists.
+/// Sheet for adding *or editing* a recipe, with editable ingredient and step
+/// lists. Pass `editing:` to edit an existing recipe in place.
 struct AddRecipeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
-    @State private var summary = ""
-    @State private var servings = 2
-    @State private var prepMinutes = 30
-    @State private var wantToMake = false
+    /// The recipe being edited, or `nil` when creating a new one.
+    var editing: Recipe?
 
-    @State private var ingredients: [DraftIngredient] = [DraftIngredient()]
-    @State private var steps: [String] = [""]
+    @State private var name: String
+    @State private var summary: String
+    @State private var servings: Int
+    @State private var prepMinutes: Int
+    @State private var wantToMake: Bool
+
+    @State private var ingredients: [DraftIngredient]
+    @State private var steps: [String]
+
+    init(editing: Recipe? = nil) {
+        self.editing = editing
+        _name = State(initialValue: editing?.name ?? "")
+        _summary = State(initialValue: editing?.summary ?? "")
+        _servings = State(initialValue: editing?.servings ?? 2)
+        _prepMinutes = State(initialValue: editing?.prepMinutes ?? 30)
+        _wantToMake = State(initialValue: editing?.wantToMake ?? false)
+        _ingredients = State(initialValue: {
+            let existing = editing?.ingredients ?? []
+            return existing.isEmpty
+                ? [DraftIngredient()]
+                : existing.map { DraftIngredient(name: $0.name, quantity: $0.quantity, unit: $0.unit) }
+        }())
+        _steps = State(initialValue: {
+            let existing = editing?.steps ?? []
+            return existing.isEmpty ? [""] : existing
+        }())
+    }
 
     var body: some View {
         NavigationStack {
@@ -59,7 +82,7 @@ struct AddRecipeView: View {
                     }
                 }
             }
-            .navigationTitle("New recipe")
+            .navigationTitle(editing == nil ? "New recipe" : "Edit recipe")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -74,18 +97,26 @@ struct AddRecipeView: View {
     }
 
     private func save() {
-        let recipe = Recipe(
-            name: name.trimmingCharacters(in: .whitespaces),
-            summary: summary,
-            steps: steps.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
-            servings: servings,
-            prepMinutes: prepMinutes,
-            wantToMake: wantToMake
-        )
+        let recipe: Recipe
+        if let editing {
+            recipe = editing
+            // Replace ingredients wholesale — simplest correct reconciliation.
+            for ingredient in editing.ingredients { modelContext.delete(ingredient) }
+            recipe.ingredients = []
+        } else {
+            recipe = Recipe(name: "")
+            modelContext.insert(recipe)
+        }
+
+        recipe.name = name.trimmingCharacters(in: .whitespaces)
+        recipe.summary = summary
+        recipe.steps = steps.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        recipe.servings = servings
+        recipe.prepMinutes = prepMinutes
+        recipe.wantToMake = wantToMake
         recipe.ingredients = ingredients
             .filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
             .map { RecipeIngredient(name: $0.name, quantity: $0.quantity, unit: $0.unit, recipe: recipe) }
-        modelContext.insert(recipe)
         dismiss()
     }
 }

@@ -11,6 +11,7 @@ struct RecipeDetailView: View {
     @Query private var shopping: [ShoppingItem]
 
     @State private var toast: String?
+    @State private var showingEditor = false
 
     /// Ingredients not currently in the pantry (by name, case-insensitive).
     private var missingIngredients: [RecipeIngredient] {
@@ -95,6 +96,14 @@ struct RecipeDetailView: View {
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
         .animation(.default, value: toast)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Edit") { showingEditor = true }
+            }
+        }
+        .sheet(isPresented: $showingEditor) {
+            AddRecipeView(editing: recipe)
+        }
     }
 
     /// Deduct each ingredient's quantity from a matching pantry item, removing
