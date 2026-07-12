@@ -27,10 +27,18 @@ jobs:
       # signing so no developer account/profile is required in CI.
       - name: Build
         run: |
+          set -o pipefail
           xcodebuild \
             -project LifeTracker.xcodeproj \
             -scheme LifeTracker \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee build.log
+
+      - name: Surface compiler errors
+        if: failure()
+        run: |
+          echo "::group::Swift errors"
+          grep -nE "error:" build.log || echo "(no 'error:' lines captured)"
+          echo "::endgroup::"
