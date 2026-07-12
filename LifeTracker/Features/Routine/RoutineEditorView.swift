@@ -76,7 +76,7 @@ struct RoutineEditorView: View {
             for existing in routine.steps { modelContext.delete(existing) }
             target.steps = []
         } else {
-            target = Routine(isSuggested: false)
+            target = Routine(name: "", isSuggested: false)
             modelContext.insert(target)
         }
 
