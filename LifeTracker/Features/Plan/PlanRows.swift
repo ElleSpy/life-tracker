@@ -84,6 +84,30 @@ struct TodoRowView: View {
     }
 }
 
+/// A compact row for the "at a glance" summary at the top of the Plan tab.
+struct SummaryRow: View {
+    let systemImage: String
+    let title: String
+    var detail: String?
+
+    var body: some View {
+        HStack(spacing: Theme.Spacing.md) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Theme.Palette.accent)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
+                Text(title)
+                if let detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(Theme.Palette.subtleText)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+}
+
 /// A calendar event row (read-only, from EventKit).
 struct CalendarEventRow: View {
     let event: CalendarEvent

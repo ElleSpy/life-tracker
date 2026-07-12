@@ -7,6 +7,7 @@ struct PlanView: View {
     @Environment(Services.self) private var services
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TodoItem.createdAt, order: .reverse) private var todos: [TodoItem]
+    @Query private var mealEntries: [MealPlanEntry]
 
     @State private var selectedDay: Date = .now
     @State private var events: [CalendarEvent] = []
@@ -24,12 +25,37 @@ struct PlanView: View {
         todos.filter(\.isCompleted)
     }
 
+    /// Open tasks due on the selected day.
+    private var tasksDueSelectedDay: [TodoItem] {
+        openTodos.filter { todo in
+            guard let due = todo.dueDate else { return false }
+            return Calendar.current.isDate(due, inSameDayAs: selectedDay)
+        }
+    }
+
+    /// The dinner planned for the selected day, if any.
+    private var dinnerSelectedDay: MealPlanEntry? {
+        mealEntries.first {
+            $0.mealType == .dinner
+                && Calendar.current.isDate($0.date, inSameDayAs: selectedDay)
+                && !$0.isEmpty
+        }
+    }
+
+    private var nextEvent: CalendarEvent? {
+        events.first { $0.end > .now } ?? events.first
+    }
+
+    private var isToday: Bool { Calendar.current.isDateInToday(selectedDay) }
+
     var body: some View {
         NavigationStack {
             List {
                 WeekStripView(selectedDay: $selectedDay)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+
+                summarySection
 
                 calendarSection
 
@@ -80,6 +106,27 @@ struct PlanView: View {
                 AddTodoView(defaultDate: selectedDay)
             }
             .task(id: selectedDay) { await loadEvents() }
+        }
+    }
+
+    @ViewBuilder
+    private var summarySection: some View {
+        Section(isToday ? "Today at a glance" : "At a glance") {
+            SummaryRow(
+                systemImage: "checklist",
+                title: "\(tasksDueSelectedDay.count) task\(tasksDueSelectedDay.count == 1 ? "" : "s") due",
+                detail: tasksDueSelectedDay.first?.title
+            )
+            SummaryRow(
+                systemImage: "calendar",
+                title: nextEvent.map { isToday ? "Next: \($0.title)" : $0.title } ?? "No events",
+                detail: nextEvent?.timeText
+            )
+            SummaryRow(
+                systemImage: "fork.knife",
+                title: dinnerSelectedDay.map { "Dinner: \($0.displayTitle)" } ?? "No dinner planned",
+                detail: dinnerSelectedDay == nil ? "Plan one in Food › Making" : nil
+            )
         }
     }
 

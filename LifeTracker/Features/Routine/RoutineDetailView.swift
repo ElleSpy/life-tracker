@@ -9,9 +9,23 @@ struct RoutineDetailView: View {
     @Bindable var routine: Routine
 
     @State private var showingEditor = false
+    @State private var showingRun = false
 
     var body: some View {
         List {
+            if !routine.isSuggested && !routine.steps.isEmpty {
+                Section {
+                    Button {
+                        showingRun = true
+                    } label: {
+                        Label("Start routine", systemImage: "play.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                }
+            }
+
             if !routine.notes.isEmpty {
                 Section { Text(routine.notes) }
             }
@@ -51,6 +65,9 @@ struct RoutineDetailView: View {
         }
         .sheet(isPresented: $showingEditor) {
             RoutineEditorView(routine: routine)
+        }
+        .fullScreenCover(isPresented: $showingRun) {
+            RoutineRunView(routine: routine)
         }
     }
 
