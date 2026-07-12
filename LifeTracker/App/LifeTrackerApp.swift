@@ -19,7 +19,8 @@ struct LifeTrackerApp: App {
         do {
             modelContainer = try ModelContainer(
                 for: TodoItem.self, PantryItem.self, Recipe.self,
-                RecipeIngredient.self, MealPlanEntry.self, Routine.self, RoutineStep.self
+                RecipeIngredient.self, MealPlanEntry.self, Routine.self, RoutineStep.self,
+                ShoppingItem.self
             )
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")

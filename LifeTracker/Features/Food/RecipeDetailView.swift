@@ -1,10 +1,22 @@
 import SwiftUI
+import SwiftData
 
-/// Full recipe view with ingredients and steps, plus a shortcut to add any
-/// missing ingredients to the pantry (handy after cooking / before shopping).
+/// Full recipe view with ingredients and steps. Includes two kitchen shortcuts:
+/// "I cooked this" (deducts ingredients from the pantry) and "add missing to
+/// shopping list".
 struct RecipeDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var recipe: Recipe
+    @Query private var pantry: [PantryItem]
+    @Query private var shopping: [ShoppingItem]
+
+    @State private var toast: String?
+
+    /// Ingredients not currently in the pantry (by name, case-insensitive).
+    private var missingIngredients: [RecipeIngredient] {
+        let have = Set(pantry.map { ShoppingListPlanner.normalise($0.name) })
+        return recipe.ingredients.filter { !have.contains(ShoppingListPlanner.normalise($0.name)) }
+    }
 
     var body: some View {
         List {
@@ -57,9 +69,66 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+
+            Section {
+                Button {
+                    cookThis()
+                } label: {
+                    Label("I cooked this", systemImage: "flame")
+                }
+                Button {
+                    addMissingToShoppingList()
+                } label: {
+                    Label("Add \(missingIngredients.count) missing to shopping list",
+                          systemImage: "cart.badge.plus")
+                }
+                .disabled(missingIngredients.isEmpty)
+                if let toast {
+                    Text(toast)
+                        .font(.caption)
+                        .foregroundStyle(Theme.Palette.subtleText)
+                }
+            } footer: {
+                Text("\"I cooked this\" subtracts the ingredients from your pantry.")
+            }
         }
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
+        .animation(.default, value: toast)
+    }
+
+    /// Deduct each ingredient's quantity from a matching pantry item, removing
+    /// pantry items that reach zero.
+    private func cookThis() {
+        var deducted = 0
+        for ingredient in recipe.ingredients {
+            let key = ShoppingListPlanner.normalise(ingredient.name)
+            guard let match = pantry.first(where: { ShoppingListPlanner.normalise($0.name) == key })
+            else { continue }
+            match.quantity -= ingredient.quantity
+            deducted += 1
+            if match.quantity <= 0 {
+                modelContext.delete(match)
+            }
+        }
+        toast = deducted == 0
+            ? "None of these were in your pantry."
+            : "Updated \(deducted) pantry item\(deducted == 1 ? "" : "s")."
+    }
+
+    private func addMissingToShoppingList() {
+        let onList = Set(shopping.map { ShoppingListPlanner.normalise($0.name) })
+        var added = 0
+        for ingredient in missingIngredients
+        where !onList.contains(ShoppingListPlanner.normalise(ingredient.name)) {
+            modelContext.insert(ShoppingItem(
+                name: ingredient.name,
+                quantity: ingredient.quantity,
+                unit: ingredient.unit
+            ))
+            added += 1
+        }
+        toast = "Added \(added) item\(added == 1 ? "" : "s") to your shopping list."
     }
 }
 

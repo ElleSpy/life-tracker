@@ -84,6 +84,14 @@ enum SampleData {
         )
         context.insert(dinnerToday)
         context.insert(breakfastTomorrow)
+
+        // A starter shopping list.
+        let shopping = [
+            ShoppingItem(name: "Soy sauce", quantity: 1, unit: "bottle", category: .pantry),
+            ShoppingItem(name: "Spring onions", quantity: 1, unit: "bunch", category: .produce),
+            ShoppingItem(name: "Miso paste", quantity: 1, unit: "tub", category: .pantry)
+        ]
+        shopping.forEach(context.insert)
     }
 
     /// In-memory container preloaded with sample data, for SwiftUI previews.
@@ -93,6 +101,7 @@ enum SampleData {
         let container = try! ModelContainer(
             for: TodoItem.self, PantryItem.self, Recipe.self,
             RecipeIngredient.self, MealPlanEntry.self, Routine.self, RoutineStep.self,
+            ShoppingItem.self,
             configurations: config
         )
         populate(container.mainContext)

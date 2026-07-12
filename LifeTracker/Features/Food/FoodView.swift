@@ -7,6 +7,7 @@ struct FoodView: View {
         case have = "Have"
         case making = "Making"
         case recipes = "Recipes"
+        case shop = "Shop"
         var id: String { rawValue }
     }
 
@@ -29,6 +30,8 @@ struct FoodView: View {
                     MealPlanView()
                 case .recipes:
                     RecipeListView()
+                case .shop:
+                    ShoppingListView()
                 }
             }
             .navigationTitle("Food")
