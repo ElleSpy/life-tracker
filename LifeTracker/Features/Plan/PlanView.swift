@@ -5,6 +5,7 @@ import SwiftData
 /// manual additions and (stubbed) sync from an external to-do app.
 struct PlanView: View {
     @Environment(Services.self) private var services
+    @Environment(AppSettings.self) private var settings
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TodoItem.createdAt, order: .reverse) private var todos: [TodoItem]
     @Query private var mealEntries: [MealPlanEntry]
@@ -50,6 +51,12 @@ struct PlanView: View {
     }
 
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDay) }
+
+    /// Changes whenever the selected day or the chosen calendars change, so the
+    /// events list reloads.
+    private var eventsReloadKey: String {
+        String(selectedDay.timeIntervalSince1970) + settings.selectedCalendarIDs.sorted().joined(separator: ",")
+    }
 
     var body: some View {
         NavigationStack {
@@ -108,7 +115,7 @@ struct PlanView: View {
             .sheet(isPresented: $showingAddTodo) {
                 AddTodoView(defaultDate: selectedDay)
             }
-            .task(id: selectedDay) { await loadEvents() }
+            .task(id: eventsReloadKey) { await loadEvents() }
         }
     }
 
@@ -163,7 +170,7 @@ struct PlanView: View {
             _ = await services.calendar.requestAccess()
         }
         calendarDenied = services.calendar.authStatus == .denied
-        events = await services.calendar.events(on: selectedDay)
+        events = await services.calendar.events(on: selectedDay, calendarIDs: settings.selectedCalendarIDs)
     }
 
     private func syncTodos() async {

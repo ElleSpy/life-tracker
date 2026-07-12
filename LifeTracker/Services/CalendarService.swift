@@ -25,13 +25,24 @@ enum CalendarAuthStatus {
     case denied
 }
 
+/// A calendar the user can choose to show or hide.
+struct CalendarInfo: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let colorHex: String?
+}
+
 /// Read access to the user's calendars. `EventKitCalendarService` is the real
 /// implementation; `MockCalendarService` backs previews and simulator demos
 /// where calendar access hasn't been granted.
 protocol CalendarService: AnyObject {
     var authStatus: CalendarAuthStatus { get }
     func requestAccess() async -> Bool
-    func events(on day: Date) async -> [CalendarEvent]
+    /// All calendars the user could choose to display.
+    func availableCalendars() -> [CalendarInfo]
+    /// Events on `day`, limited to `calendarIDs`. An empty set means all
+    /// calendars.
+    func events(on day: Date, calendarIDs: Set<String>) async -> [CalendarEvent]
 }
 
 /// Real EventKit-backed calendar access.
@@ -57,17 +68,32 @@ final class EventKitCalendarService: CalendarService {
         }
     }
 
-    func events(on day: Date) async -> [CalendarEvent] {
+    func availableCalendars() -> [CalendarInfo] {
+        guard authStatus == .authorized else { return [] }
+        return store.calendars(for: .event)
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+            .map { CalendarInfo(id: $0.calendarIdentifier, title: $0.title,
+                                colorHex: $0.cgColor.flatMap(Self.hex(from:))) }
+    }
+
+    func events(on day: Date, calendarIDs: Set<String>) async -> [CalendarEvent] {
         guard authStatus == .authorized else { return [] }
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: day)
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             return []
         }
+        // Restrict to the chosen calendars (empty selection = all).
+        let allCalendars = store.calendars(for: .event)
+        let chosen = calendarIDs.isEmpty
+            ? allCalendars
+            : allCalendars.filter { calendarIDs.contains($0.calendarIdentifier) }
+        guard !chosen.isEmpty else { return [] }
+
         let predicate = store.predicateForEvents(
             withStart: startOfDay,
             end: endOfDay,
-            calendars: nil
+            calendars: chosen
         )
         return store.events(matching: predicate)
             .sorted { $0.startDate < $1.startDate }
@@ -98,7 +124,15 @@ final class MockCalendarService: CalendarService {
 
     func requestAccess() async -> Bool { true }
 
-    func events(on day: Date) async -> [CalendarEvent] {
+    func availableCalendars() -> [CalendarInfo] {
+        [
+            CalendarInfo(id: "personal", title: "Personal", colorHex: "#5A66B0"),
+            CalendarInfo(id: "work", title: "Work", colorHex: "#8C6BB0"),
+            CalendarInfo(id: "birthdays", title: "Birthdays", colorHex: "#4CAF50")
+        ]
+    }
+
+    func events(on day: Date, calendarIDs: Set<String>) async -> [CalendarEvent] {
         let cal = Calendar.current
         func at(_ hour: Int, _ minute: Int = 0) -> Date {
             cal.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day

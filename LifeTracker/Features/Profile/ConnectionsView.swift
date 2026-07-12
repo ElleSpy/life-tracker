@@ -4,8 +4,10 @@ import SwiftUI
 /// pantry import.
 struct ConnectionsView: View {
     @Environment(Services.self) private var services
+    @Environment(AppSettings.self) private var settings
 
     @State private var calendarStatus: CalendarAuthStatus = .notDetermined
+    @State private var calendars: [CalendarInfo] = []
     @State private var connectedTodo: TodoProvider?
     @State private var isConnectingTodo = false
     @State private var notificationsOn = false
@@ -23,6 +25,7 @@ struct ConnectionsView: View {
                         Task {
                             _ = await services.calendar.requestAccess()
                             calendarStatus = services.calendar.authStatus
+                            calendars = services.calendar.availableCalendars()
                         }
                     }
                 } else if calendarStatus == .denied {
@@ -34,6 +37,28 @@ struct ConnectionsView: View {
                 Text("Calendar")
             } footer: {
                 Text("Your events appear on the Plan tab.")
+            }
+
+            if calendarStatus == .authorized && !calendars.isEmpty {
+                Section {
+                    ForEach(calendars) { cal in
+                        Toggle(isOn: Binding(
+                            get: { isShown(cal) },
+                            set: { setShown(cal, $0) }
+                        )) {
+                            Label {
+                                Text(cal.title)
+                            } icon: {
+                                Image(systemName: "circle.fill")
+                                    .foregroundStyle(Color(hex: cal.colorHex))
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Calendars to show")
+                } footer: {
+                    Text("Only the calendars you switch on appear on the Plan tab.")
+                }
             }
 
             Section {
@@ -103,10 +128,25 @@ struct ConnectionsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             calendarStatus = services.calendar.authStatus
+            calendars = services.calendar.availableCalendars()
             connectedTodo = services.todoSync.connectedProvider
             await services.notifications.refreshAuthorization()
             notificationsOn = services.notifications.isAuthorized
         }
+    }
+
+    /// A calendar is shown when it's explicitly selected, or when nothing is
+    /// selected yet (empty selection means "all").
+    private func isShown(_ cal: CalendarInfo) -> Bool {
+        settings.selectedCalendarIDs.isEmpty || settings.selectedCalendarIDs.contains(cal.id)
+    }
+
+    private func setShown(_ cal: CalendarInfo, _ shown: Bool) {
+        var ids = settings.selectedCalendarIDs
+        // Materialise "all" into an explicit set the first time the user picks.
+        if ids.isEmpty { ids = Set(calendars.map(\.id)) }
+        if shown { ids.insert(cal.id) } else { ids.remove(cal.id) }
+        settings.selectedCalendarIDs = ids
     }
 
     @ViewBuilder
@@ -130,4 +170,5 @@ struct ConnectionsView: View {
 #Preview {
     NavigationStack { ConnectionsView() }
         .environment(Services.preview)
+        .environment(AppSettings())
 }
