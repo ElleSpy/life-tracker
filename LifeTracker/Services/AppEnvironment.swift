@@ -14,17 +14,20 @@ final class Services {
     let todoSync: TodoSyncService
     let pantryImport: PantryImportService
     let auth: AuthService
+    let notifications: NotificationService
 
     init(
         calendar: CalendarService = EventKitCalendarService(),
         todoSync: TodoSyncService = MockTodoSyncService(),
         pantryImport: PantryImportService = MockPantryImportService(),
-        auth: AuthService = MockAuthService()
+        auth: AuthService = MockAuthService(),
+        notifications: NotificationService = NotificationService()
     ) {
         self.calendar = calendar
         self.todoSync = todoSync
         self.pantryImport = pantryImport
         self.auth = auth
+        self.notifications = notifications
     }
 
     /// All-mock services for SwiftUI previews.

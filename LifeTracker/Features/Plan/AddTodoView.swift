@@ -3,6 +3,7 @@ import SwiftUI
 /// Sheet for manually adding a to-do to the Plan tab.
 struct AddTodoView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(Services.self) private var services
     @Environment(\.dismiss) private var dismiss
 
     var defaultDate: Date = .now
@@ -65,11 +66,13 @@ struct AddTodoView: View {
             priority: priority
         )
         modelContext.insert(item)
+        services.notifications.sync(item)
         dismiss()
     }
 }
 
 #Preview {
     AddTodoView()
+        .environment(Services.preview)
         .modelContainer(SampleData.previewContainer)
 }

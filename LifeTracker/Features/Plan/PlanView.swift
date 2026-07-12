@@ -169,19 +169,22 @@ struct PlanView: View {
         let remote = await services.todoSync.fetchTodos()
         let existingIDs = Set(todos.compactMap(\.externalID))
         for item in remote where !existingIDs.contains(item.id) {
-            modelContext.insert(TodoItem(
+            let todo = TodoItem(
                 title: item.title,
                 notes: item.notes,
                 dueDate: item.dueDate,
                 priority: item.priority,
                 source: .todoApp,
                 externalID: item.id
-            ))
+            )
+            modelContext.insert(todo)
+            services.notifications.sync(todo)
         }
     }
 
     private func delete(_ offsets: IndexSet, from list: [TodoItem]) {
         for index in offsets {
+            services.notifications.cancelReminder(id: list[index].reminderIdentifier)
             modelContext.delete(list[index])
         }
     }

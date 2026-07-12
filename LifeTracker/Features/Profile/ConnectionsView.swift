@@ -8,6 +8,7 @@ struct ConnectionsView: View {
     @State private var calendarStatus: CalendarAuthStatus = .notDetermined
     @State private var connectedTodo: TodoProvider?
     @State private var isConnectingTodo = false
+    @State private var notificationsOn = false
 
     var body: some View {
         List {
@@ -71,6 +72,25 @@ struct ConnectionsView: View {
             }
 
             Section {
+                Toggle("Task reminders", isOn: Binding(
+                    get: { notificationsOn },
+                    set: { wantOn in
+                        if wantOn {
+                            Task {
+                                notificationsOn = await services.notifications.requestAuthorization()
+                            }
+                        } else {
+                            notificationsOn = false
+                        }
+                    }
+                ))
+            } header: {
+                Text("Reminders")
+            } footer: {
+                Text("Get a local notification when a to-do with a due date and time comes up.")
+            }
+
+            Section {
                 Label("Import from email", systemImage: "envelope")
                 Label("Import from photo", systemImage: "camera")
             } header: {
@@ -81,9 +101,11 @@ struct ConnectionsView: View {
         }
         .navigationTitle("Connections")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
+        .task {
             calendarStatus = services.calendar.authStatus
             connectedTodo = services.todoSync.connectedProvider
+            await services.notifications.refreshAuthorization()
+            notificationsOn = services.notifications.isAuthorized
         }
     }
 

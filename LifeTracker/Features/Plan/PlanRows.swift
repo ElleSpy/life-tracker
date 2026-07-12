@@ -40,12 +40,14 @@ struct WeekStripView: View {
 
 /// A single to-do row with a completion toggle.
 struct TodoRowView: View {
+    @Environment(Services.self) private var services
     @Bindable var todo: TodoItem
 
     var body: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.md) {
             Button {
                 todo.toggle()
+                services.notifications.sync(todo)
             } label: {
                 Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title3)

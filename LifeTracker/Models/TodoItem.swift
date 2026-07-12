@@ -15,6 +15,8 @@ final class TodoItem {
     /// Identifier from the originating service, so a sync can update in place
     /// rather than creating duplicates. `nil` for manual items.
     var externalID: String?
+    /// Stable identifier used when scheduling/cancelling a local reminder.
+    var reminderIdentifier: String
     var createdAt: Date
 
     init(
@@ -25,6 +27,7 @@ final class TodoItem {
         priority: Priority = .medium,
         source: ItemSource = .manual,
         externalID: String? = nil,
+        reminderIdentifier: String = UUID().uuidString,
         createdAt: Date = .now
     ) {
         self.title = title
@@ -35,6 +38,7 @@ final class TodoItem {
         self.priority = priority
         self.source = source
         self.externalID = externalID
+        self.reminderIdentifier = reminderIdentifier
         self.createdAt = createdAt
     }
 
