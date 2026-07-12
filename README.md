@@ -88,14 +88,28 @@ Implement the relevant protocol (`TodoSyncService` / `PantryImportService`) with
 a real API client and swap the default in `Services/AppEnvironment.swift`. The
 Plan/Food UIs need no changes.
 
+## Built in v0.1
+
+Beyond the four-tab skeleton:
+
+- **Shopping list** (Food › Shop): auto-fill from the week's meal plan, tick off,
+  and move bought items into the pantry.
+- **Cook this**: a recipe's "I cooked this" deducts ingredients from the pantry;
+  "add missing to shopping list" tops up what you're short of.
+- **Routine run mode**: step through a routine with checkable progress.
+- **Today at a glance** on the Plan tab: tasks due, next event, tonight's dinner.
+- **Local reminders** for to-dos with a due date/time (opt-in).
+- **Recipe editing** (not just adding).
+- **CI**: every push builds the app on a macOS runner (see `.github/workflows`).
+
 ## Roadmap (next up)
 
 - Real to-do provider (OAuth + one provider API end-to-end)
 - Real email/photo pantry parsing (Vision OCR + Gmail)
-- "Cook this" → deduct ingredients from the pantry; shopping list from the plan
-- Suggested routines expanded; per-day routine scheduling & reminders
+- Per-day routine scheduling & routine step reminders
 - Google SSO (GoogleSignIn SDK + client ID)
 - Recipe photos and richer nutrition/tags
+- Unit conversions when matching pantry ↔ recipe quantities
 
 ## Notes
 
