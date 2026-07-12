@@ -11,26 +11,26 @@ concurrency:
 
 jobs:
   build:
-    name: Build (iOS Simulator)
+    name: Build (iOS)
     runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16
-        run: sudo xcode-select -switch /Applications/Xcode_16.app
-
-      - name: Show versions
+      - name: Show toolchain
         run: |
           xcodebuild -version
-          xcrun simctl list runtimes | grep iOS || true
+          xcodebuild -showsdks | grep -i ios || true
 
+      # Build for a generic iOS device: this compiles every source file without
+      # needing a matching iOS Simulator runtime on the runner, and skips code
+      # signing so no developer account/profile is required in CI.
       - name: Build
         run: |
           xcodebuild \
             -project LifeTracker.xcodeproj \
             -scheme LifeTracker \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build
