@@ -10,6 +10,7 @@ struct ConnectionsView: View {
     @State private var calendars: [CalendarInfo] = []
     @State private var connectedTodo: TodoProvider?
     @State private var isConnectingTodo = false
+    @State private var connectError: String?
     @State private var notificationsOn = false
 
     var body: some View {
@@ -94,7 +95,7 @@ struct ConnectionsView: View {
             } header: {
                 Text("To-do apps")
             } footer: {
-                Text("Sync tasks into your Plan. Apple Reminders works now; other apps are coming soon (they load sample tasks for preview). Use the Sync button on the Plan tab to pull tasks in.")
+                Text("Connect an app, then use the Sync button on the Plan tab to pull tasks in. Apple Reminders works out of the box; TickTick needs a one-time setup (see TICKTICK_SETUP.md). Others are coming soon.")
             }
 
             Section {
@@ -127,6 +128,14 @@ struct ConnectionsView: View {
         }
         .navigationTitle("Connections")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Couldn't connect", isPresented: Binding(
+            get: { connectError != nil },
+            set: { if !$0 { connectError = nil } }
+        )) {
+            Button("OK", role: .cancel) { connectError = nil }
+        } message: {
+            Text(connectError ?? "")
+        }
         .task {
             calendarStatus = services.calendar.authStatus
             calendars = services.calendar.availableCalendars()
@@ -164,6 +173,12 @@ struct ConnectionsView: View {
         defer { isConnectingTodo = false }
         if await services.todoSync.connect(provider) {
             connectedTodo = provider
+        } else if provider == .ticktick && !services.todoSync.isConfigured(.ticktick) {
+            connectError = "TickTick isn't set up yet. Add your API keys in Secrets.plist — see TICKTICK_SETUP.md — then try again."
+        } else if provider == .reminders {
+            connectError = "Couldn't access Reminders. You can enable it in Settings › LifeTracker."
+        } else {
+            connectError = "Couldn't connect to \(provider.rawValue). Please try again."
         }
     }
 }

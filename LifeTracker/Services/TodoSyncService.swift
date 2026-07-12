@@ -13,7 +13,7 @@ enum TodoProvider: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// Whether this provider is a real integration today.
-    var isLive: Bool { self == .reminders }
+    var isLive: Bool { self == .reminders || self == .ticktick }
 
     var systemImage: String {
         switch self {
@@ -41,30 +41,61 @@ struct RemoteTodo: Identifiable {
 /// (OAuth + their APIs) slot in behind this protocol without touching the UI.
 protocol TodoSyncService: AnyObject {
     var connectedProvider: TodoProvider? { get }
+    /// Whether the provider has the credentials/setup it needs to connect.
+    func isConfigured(_ provider: TodoProvider) -> Bool
     func connect(_ provider: TodoProvider) async -> Bool
     func disconnect()
     func fetchTodos() async -> [RemoteTodo]
 }
 
-/// The app's default to-do sync. Apple Reminders is fully wired via EventKit;
-/// the cloud providers fall back to sample data until their APIs are added.
+extension TodoSyncService {
+    func isConfigured(_ provider: TodoProvider) -> Bool { true }
+}
+
+/// The app's default to-do sync. Apple Reminders (EventKit) and TickTick (Open
+/// API) are real; the remaining cloud providers fall back to sample data.
 final class DefaultTodoSyncService: TodoSyncService {
     private(set) var connectedProvider: TodoProvider?
     private let store = EKEventStore()
+    private let tickTick = TickTickClient()
+
+    init() {
+        // Restore a persisted TickTick connection (token in Keychain).
+        if tickTick.isAuthorized { connectedProvider = .ticktick }
+    }
+
+    /// Whether the given provider has the setup it needs to connect.
+    func isConfigured(_ provider: TodoProvider) -> Bool {
+        switch provider {
+        case .ticktick: return tickTick.isConfigured
+        default: return true
+        }
+    }
 
     func connect(_ provider: TodoProvider) async -> Bool {
-        if provider == .reminders {
+        switch provider {
+        case .reminders:
             let granted = (try? await store.requestFullAccessToReminders()) ?? false
             if granted { connectedProvider = .reminders }
             return granted
+        case .ticktick:
+            do {
+                try await tickTick.authorize()
+                connectedProvider = .ticktick
+                return true
+            } catch {
+                return false
+            }
+        default:
+            // Not-yet-wired cloud providers: simulate a connect for preview.
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            connectedProvider = provider
+            return true
         }
-        // Cloud providers: simulate a short OAuth round-trip for now.
-        try? await Task.sleep(nanoseconds: 400_000_000)
-        connectedProvider = provider
-        return true
     }
 
     func disconnect() {
+        if connectedProvider == .ticktick { tickTick.signOut() }
         connectedProvider = nil
     }
 
@@ -72,6 +103,8 @@ final class DefaultTodoSyncService: TodoSyncService {
         switch connectedProvider {
         case .reminders:
             return await fetchReminders()
+        case .ticktick:
+            return await tickTick.fetchTasks()
         case .some:
             return Self.sampleTodos
         case .none:
