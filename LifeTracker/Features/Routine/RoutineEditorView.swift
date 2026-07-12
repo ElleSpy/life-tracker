@@ -1,8 +1,13 @@
 import SwiftUI
 import SwiftData
+import Observation
 
 /// Create or edit a routine and its steps. Works for both a brand-new routine
 /// and editing an existing owned one.
+///
+/// The draft is held in `@Observable` objects so editing one field (e.g. the
+/// name) only re-renders that field — not every step row. This keeps typing
+/// smooth even on long routines.
 struct RoutineEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -10,44 +15,39 @@ struct RoutineEditorView: View {
     /// The routine being edited, or `nil` when creating a new one.
     var routine: Routine?
 
-    @State private var name: String
-    @State private var kind: RoutineKind
-    @State private var notes: String
-    @State private var steps: [DraftStep]
+    @State private var draft: RoutineDraft
     @FocusState private var nameFocused: Bool
 
     init(routine: Routine? = nil) {
         self.routine = routine
-        _name = State(initialValue: routine?.name ?? "")
-        _kind = State(initialValue: routine?.kind ?? .custom)
-        _notes = State(initialValue: routine?.notes ?? "")
-        _steps = State(initialValue: (routine?.orderedSteps ?? []).map { DraftStep(from: $0) })
+        _draft = State(initialValue: RoutineDraft(from: routine))
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var draft = draft
+        return NavigationStack {
             Form {
                 Section {
-                    TextField("Routine name", text: $name)
+                    TextField("Routine name", text: $draft.name)
                         .focused($nameFocused)
-                    Picker("Kind", selection: $kind) {
+                    Picker("Kind", selection: $draft.kind) {
                         ForEach(RoutineKind.allCases) { kind in
                             Label(kind.label, systemImage: kind.systemImage).tag(kind)
                         }
                     }
-                    TextField("Notes (optional)", text: $notes, axis: .vertical)
+                    TextField("Notes (optional)", text: $draft.notes, axis: .vertical)
                         .lineLimit(1...3)
                 }
 
                 Section {
-                    ForEach($steps) { $step in
-                        DraftStepEditor(step: $step)
+                    ForEach(draft.steps) { step in
+                        DraftStepEditor(step: step)
                     }
-                    .onDelete { steps.remove(atOffsets: $0) }
-                    .onMove { steps.move(fromOffsets: $0, toOffset: $1) }
+                    .onDelete { draft.steps.remove(atOffsets: $0) }
+                    .onMove { draft.steps.move(fromOffsets: $0, toOffset: $1) }
 
                     Button {
-                        steps.append(DraftStep())
+                        draft.steps.append(RoutineStepDraft())
                     } label: {
                         Label("Add step", systemImage: "plus")
                     }
@@ -55,7 +55,7 @@ struct RoutineEditorView: View {
                     HStack {
                         Text("Steps")
                         Spacer()
-                        if steps.count > 1 { EditButton().textCase(nil) }
+                        if draft.steps.count > 1 { EditButton().textCase(nil) }
                     }
                 }
             }
@@ -67,11 +67,10 @@ struct RoutineEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(draft.name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
             .onAppear {
-                // Put the cursor straight in the name field for a new routine.
                 if routine == nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         nameFocused = true
@@ -93,33 +92,60 @@ struct RoutineEditorView: View {
             modelContext.insert(target)
         }
 
-        target.name = name.trimmingCharacters(in: .whitespaces)
-        target.kind = kind
-        target.notes = notes
-        target.steps = steps.enumerated().map { index, draft in
-            draft.makeStep(order: index, routine: target)
+        target.name = draft.name.trimmingCharacters(in: .whitespaces)
+        target.kind = draft.kind
+        target.notes = draft.notes
+        target.steps = draft.steps.enumerated().map { index, step in
+            step.makeStep(order: index, routine: target)
         }
         dismiss()
     }
 }
 
-/// Editable scratch model for a step.
-struct DraftStep: Identifiable {
+/// Observable draft of a whole routine.
+@Observable
+final class RoutineDraft {
+    var name: String
+    var kind: RoutineKind
+    var notes: String
+    var steps: [RoutineStepDraft]
+
+    init(from routine: Routine?) {
+        name = routine?.name ?? ""
+        kind = routine?.kind ?? .custom
+        notes = routine?.notes ?? ""
+        steps = (routine?.orderedSteps ?? []).map(RoutineStepDraft.init(from:))
+    }
+}
+
+/// Observable draft of a single step. Each row observes only its own object, so
+/// editing the routine name or another step never re-renders this one.
+@Observable
+final class RoutineStepDraft: Identifiable {
     let id = UUID()
-    var title: String = ""
-    var detail: String = ""
-    var hasTime: Bool = false
-    var time: Date = Date.now
-    var duration: Int = 15
+    var title: String
+    var detail: String
+    var hasTime: Bool
+    var time: Date
+    var duration: Int
 
-    init() {}
+    init(title: String = "", detail: String = "", hasTime: Bool = false,
+         time: Date = .now, duration: Int = 15) {
+        self.title = title
+        self.detail = detail
+        self.hasTime = hasTime
+        self.time = time
+        self.duration = duration
+    }
 
-    init(from step: RoutineStep) {
-        title = step.title
-        detail = step.detail
-        hasTime = step.startTime != nil
-        time = step.startTime ?? .now
-        duration = step.durationMinutes
+    convenience init(from step: RoutineStep) {
+        self.init(
+            title: step.title,
+            detail: step.detail,
+            hasTime: step.startTime != nil,
+            time: step.startTime ?? .now,
+            duration: step.durationMinutes
+        )
     }
 
     func makeStep(order: Int, routine: Routine) -> RoutineStep {
@@ -137,7 +163,7 @@ struct DraftStep: Identifiable {
 /// Inline editor for one draft step. Each control sits on its own generous row
 /// so taps land reliably.
 struct DraftStepEditor: View {
-    @Binding var step: DraftStep
+    @Bindable var step: RoutineStepDraft
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {

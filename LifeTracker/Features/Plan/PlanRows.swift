@@ -11,30 +11,31 @@ struct WeekStripView: View {
     }
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.Spacing.sm) {
-                ForEach(days, id: \.self) { day in
-                    let isSelected = settings.calendar.isDate(day, inSameDayAs: selectedDay)
-                    Button {
-                        selectedDay = day
-                    } label: {
-                        VStack(spacing: Theme.Spacing.xs) {
-                            Text(day.formatted(.dateTime.weekday(.abbreviated)))
-                                .font(.caption)
-                            Text(day.formatted(.dateTime.day()))
-                                .font(.headline)
-                        }
-                        .frame(width: 44, height: 60)
-                        .background(isSelected ? Theme.Palette.accent : Theme.Palette.cardBackground)
-                        .foregroundStyle(isSelected ? .white : .primary)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+        // A fixed row of seven equal-width cells so the whole week fits the
+        // screen exactly, with no horizontal scrolling.
+        HStack(spacing: Theme.Spacing.xs) {
+            ForEach(days, id: \.self) { day in
+                let isSelected = settings.calendar.isDate(day, inSameDayAs: selectedDay)
+                Button {
+                    selectedDay = day
+                } label: {
+                    VStack(spacing: Theme.Spacing.xs) {
+                        Text(day.formatted(.dateTime.weekday(.narrow)))
+                            .font(.caption)
+                        Text(day.formatted(.dateTime.day()))
+                            .font(.headline)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .background(isSelected ? Theme.Palette.accent : Theme.Palette.cardBackground)
+                    .foregroundStyle(isSelected ? .white : .primary)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, Theme.Spacing.lg)
-            .padding(.vertical, Theme.Spacing.sm)
         }
+        .padding(.horizontal, Theme.Spacing.lg)
+        .padding(.vertical, Theme.Spacing.sm)
     }
 }
 
