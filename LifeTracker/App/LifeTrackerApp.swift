@@ -7,6 +7,7 @@ struct LifeTrackerApp: App {
     /// implementations for the not-yet-wired integrations.
     @State private var services: Services
     @State private var session: Session
+    @State private var settings = AppSettings()
 
     /// The SwiftData stack holding every persisted model.
     let modelContainer: ModelContainer
@@ -32,6 +33,8 @@ struct LifeTrackerApp: App {
             RootView()
                 .environment(services)
                 .environment(session)
+                .environment(settings)
+                .environment(\.calendar, settings.calendar)
         }
         .modelContainer(modelContainer)
     }

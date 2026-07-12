@@ -5,6 +5,7 @@ import SwiftData
 /// breakfast/lunch/dinner slot each; tap a slot to assign a recipe or free text.
 struct MealPlanView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppSettings.self) private var settings
     @Query private var entries: [MealPlanEntry]
 
     @State private var editingSlot: MealSlot?
@@ -12,9 +13,7 @@ struct MealPlanView: View {
     private let mealsShown: [MealType] = [.breakfast, .lunch, .dinner]
 
     private var weekDays: [Date] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: .now)
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: today) }
+        settings.weekDays()
     }
 
     var body: some View {
@@ -68,5 +67,6 @@ struct MealSlot: Identifiable {
 
 #Preview {
     NavigationStack { MealPlanView() }
+        .environment(AppSettings())
         .modelContainer(SampleData.previewContainer)
 }

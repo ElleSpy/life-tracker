@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Manages the app's external connections: calendar (real, EventKit), to-do app
-/// sync (stubbed), and pantry import (stubbed).
+/// Manages the app's external connections: calendar, to-do apps, reminders and
+/// pantry import.
 struct ConnectionsView: View {
     @Environment(Services.self) private var services
 
@@ -33,7 +33,7 @@ struct ConnectionsView: View {
             } header: {
                 Text("Calendar")
             } footer: {
-                Text("Your events appear on the Plan tab. Powered by Apple Calendar (EventKit).")
+                Text("Your events appear on the Plan tab.")
             }
 
             Section {

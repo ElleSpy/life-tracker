@@ -23,5 +23,6 @@ struct RootView: View {
     RootView()
         .environment(Services.preview)
         .environment(Session(auth: MockAuthService()))
+        .environment(AppSettings())
         .modelContainer(SampleData.previewContainer)
 }

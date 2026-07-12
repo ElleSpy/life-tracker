@@ -23,5 +23,6 @@ struct MainTabView: View {
     MainTabView()
         .environment(Services.preview)
         .environment(Session(auth: MockAuthService()))
+        .environment(AppSettings())
         .modelContainer(SampleData.previewContainer)
 }

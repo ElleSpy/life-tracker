@@ -42,8 +42,11 @@ struct PlanView: View {
         }
     }
 
+    /// The next timed event (all-day items like birthdays are excluded — they
+    /// aren't really "next up").
     private var nextEvent: CalendarEvent? {
-        events.first { $0.end > .now } ?? events.first
+        let timed = events.filter { !$0.isAllDay }
+        return timed.first { $0.end > .now } ?? timed.first
     }
 
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDay) }
@@ -193,5 +196,6 @@ struct PlanView: View {
 #Preview {
     PlanView()
         .environment(Services.preview)
+        .environment(AppSettings())
         .modelContainer(SampleData.previewContainer)
 }

@@ -42,5 +42,6 @@ struct FoodView: View {
 #Preview {
     FoodView()
         .environment(Services.preview)
+        .environment(AppSettings())
         .modelContainer(SampleData.previewContainer)
 }

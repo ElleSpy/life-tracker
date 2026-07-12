@@ -31,7 +31,12 @@ struct ProfileView: View {
                     .padding(.vertical, Theme.Spacing.xs)
                 }
 
-                Section("Integrations") {
+                Section {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
                     NavigationLink {
                         ConnectionsView()
                     } label: {

@@ -1,20 +1,20 @@
 import SwiftUI
 
 /// A horizontal strip of the current week for picking which day to view.
+/// The week is aligned to the user's chosen first weekday (see `AppSettings`).
 struct WeekStripView: View {
+    @Environment(AppSettings.self) private var settings
     @Binding var selectedDay: Date
 
     private var days: [Date] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: .now)
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: today) }
+        settings.weekDays()
     }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Theme.Spacing.sm) {
                 ForEach(days, id: \.self) { day in
-                    let isSelected = Calendar.current.isDate(day, inSameDayAs: selectedDay)
+                    let isSelected = settings.calendar.isDate(day, inSameDayAs: selectedDay)
                     Button {
                         selectedDay = day
                     } label: {
