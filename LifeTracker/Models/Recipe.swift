@@ -58,6 +58,9 @@ final class RecipeIngredient {
     }
 
     var displayLine: String {
+        // A zero quantity with no unit means "unspecified" (e.g. imported
+        // ingredient lines that already read like "2 cups flour").
+        if quantity == 0 && unit.isEmpty { return name }
         let qty = quantity.rounded() == quantity
             ? String(Int(quantity))
             : String(format: "%.1f", quantity)

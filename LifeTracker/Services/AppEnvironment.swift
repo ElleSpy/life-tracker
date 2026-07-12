@@ -13,6 +13,7 @@ final class Services {
     let calendar: CalendarService
     let todoSync: TodoSyncService
     let pantryImport: PantryImportService
+    let recipeImport: RecipeImportService
     let auth: AuthService
     let notifications: NotificationService
 
@@ -20,12 +21,14 @@ final class Services {
         calendar: CalendarService = EventKitCalendarService(),
         todoSync: TodoSyncService = DefaultTodoSyncService(),
         pantryImport: PantryImportService = MockPantryImportService(),
+        recipeImport: RecipeImportService = WebRecipeImportService(),
         auth: AuthService = MockAuthService(),
         notifications: NotificationService = NotificationService()
     ) {
         self.calendar = calendar
         self.todoSync = todoSync
         self.pantryImport = pantryImport
+        self.recipeImport = recipeImport
         self.auth = auth
         self.notifications = notifications
     }
@@ -36,6 +39,7 @@ final class Services {
             calendar: MockCalendarService(),
             todoSync: MockTodoSyncService(),
             pantryImport: MockPantryImportService(),
+            recipeImport: MockRecipeImportService(),
             auth: MockAuthService()
         )
     }

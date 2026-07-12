@@ -37,6 +37,21 @@ struct AddRecipeView: View {
         }())
     }
 
+    /// Seed the editor from a recipe parsed off the web, for review before
+    /// saving. Ingredient lines keep a 0 quantity so they display verbatim.
+    init(prefill: ParsedRecipe) {
+        self.editing = nil
+        _name = State(initialValue: prefill.name)
+        _summary = State(initialValue: prefill.summary)
+        _servings = State(initialValue: prefill.servings)
+        _prepMinutes = State(initialValue: 30)
+        _wantToMake = State(initialValue: false)
+        _ingredients = State(initialValue: prefill.ingredients.isEmpty
+            ? [DraftIngredient()]
+            : prefill.ingredients.map { DraftIngredient(name: $0, quantity: 0, unit: "") })
+        _steps = State(initialValue: prefill.steps.isEmpty ? [""] : prefill.steps)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
