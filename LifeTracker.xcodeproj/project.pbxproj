@@ -255,6 +255,7 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LifeTracker shows your calendar events alongside your to-do list so your day is in one place.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a receipt or your shelves to import items into your pantry.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Import a photo of a receipt or your shelves to add items to your pantry.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "LifeTracker syncs your reminders into your Plan so your tasks are in one place.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +289,7 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "LifeTracker shows your calendar events alongside your to-do list so your day is in one place.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take a photo of a receipt or your shelves to import items into your pantry.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Import a photo of a receipt or your shelves to add items to your pantry.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "LifeTracker syncs your reminders into your Plan so your tasks are in one place.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

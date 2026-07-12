@@ -78,7 +78,8 @@ struct ConnectionsView: View {
                             Button {
                                 Task { await connectTodo(provider) }
                             } label: {
-                                Label(provider.rawValue, systemImage: provider.systemImage)
+                                Label(provider.isLive ? provider.rawValue : "\(provider.rawValue) (soon)",
+                                      systemImage: provider.systemImage)
                             }
                         }
                     } label: {
@@ -93,7 +94,7 @@ struct ConnectionsView: View {
             } header: {
                 Text("To-do apps")
             } footer: {
-                Text("Sync tasks into your Plan. Provider APIs are stubbed for now — connecting loads sample tasks.")
+                Text("Sync tasks into your Plan. Apple Reminders works now; other apps are coming soon (they load sample tasks for preview). Use the Sync button on the Plan tab to pull tasks in.")
             }
 
             Section {

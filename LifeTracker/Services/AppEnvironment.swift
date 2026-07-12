@@ -18,7 +18,7 @@ final class Services {
 
     init(
         calendar: CalendarService = EventKitCalendarService(),
-        todoSync: TodoSyncService = MockTodoSyncService(),
+        todoSync: TodoSyncService = DefaultTodoSyncService(),
         pantryImport: PantryImportService = MockPantryImportService(),
         auth: AuthService = MockAuthService(),
         notifications: NotificationService = NotificationService()
