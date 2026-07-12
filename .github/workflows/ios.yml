@@ -1,0 +1,44 @@
+name: iOS build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (iOS)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i ios || true
+
+      # Build for a generic iOS device: this compiles every source file without
+      # needing a matching iOS Simulator runtime on the runner, and skips code
+      # signing so no developer account/profile is required in CI.
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project LifeTracker.xcodeproj \
+            -scheme LifeTracker \
+            -destination 'generic/platform=iOS' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee build.log
+
+      - name: Surface compiler errors
+        if: failure()
+        run: |
+          echo "::group::Swift errors"
+          grep -nE "error:" build.log || echo "(no 'error:' lines captured)"
+          echo "::endgroup::"
