@@ -3,10 +3,9 @@ import UserNotifications
 
 /// Schedules local reminders for to-dos with due dates. Thin wrapper over
 /// `UNUserNotificationCenter` so views don't touch the framework directly.
-@Observable
 final class NotificationService {
     private let center = UNUserNotificationCenter.current()
-    var isAuthorized = false
+    private(set) var isAuthorized = false
 
     /// Refresh the cached authorization flag from the system settings.
     func refreshAuthorization() async {
