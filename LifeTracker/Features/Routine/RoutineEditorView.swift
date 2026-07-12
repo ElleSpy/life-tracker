@@ -14,6 +14,7 @@ struct RoutineEditorView: View {
     @State private var kind: RoutineKind
     @State private var notes: String
     @State private var steps: [DraftStep]
+    @FocusState private var nameFocused: Bool
 
     init(routine: Routine? = nil) {
         self.routine = routine
@@ -28,6 +29,7 @@ struct RoutineEditorView: View {
             Form {
                 Section {
                     TextField("Routine name", text: $name)
+                        .focused($nameFocused)
                     Picker("Kind", selection: $kind) {
                         ForEach(RoutineKind.allCases) { kind in
                             Label(kind.label, systemImage: kind.systemImage).tag(kind)
@@ -37,7 +39,7 @@ struct RoutineEditorView: View {
                         .lineLimit(1...3)
                 }
 
-                Section("Steps") {
+                Section {
                     ForEach($steps) { $step in
                         DraftStepEditor(step: $step)
                     }
@@ -48,6 +50,12 @@ struct RoutineEditorView: View {
                         steps.append(DraftStep())
                     } label: {
                         Label("Add step", systemImage: "plus")
+                    }
+                } header: {
+                    HStack {
+                        Text("Steps")
+                        Spacer()
+                        if steps.count > 1 { EditButton().textCase(nil) }
                     }
                 }
             }
@@ -61,8 +69,13 @@ struct RoutineEditorView: View {
                     Button("Save") { save() }
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    EditButton()
+            }
+            .onAppear {
+                // Put the cursor straight in the name field for a new routine.
+                if routine == nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        nameFocused = true
+                    }
                 }
             }
         }
@@ -121,29 +134,30 @@ struct DraftStep: Identifiable {
     }
 }
 
-/// Inline editor for one draft step.
+/// Inline editor for one draft step. Each control sits on its own generous row
+/// so taps land reliably.
 struct DraftStepEditor: View {
     @Binding var step: DraftStep
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             TextField("Step title", text: $step.title)
                 .font(.body.weight(.medium))
             TextField("Detail (optional)", text: $step.detail)
-                .font(.caption)
-            HStack {
-                Toggle("Time", isOn: $step.hasTime)
-                    .labelsHidden()
-                if step.hasTime {
-                    DatePicker("", selection: $step.time, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                }
-                Spacer()
-                Stepper("\(step.duration)m", value: $step.duration, in: 5...240, step: 5)
-                    .fixedSize()
+                .font(.subheadline)
+                .foregroundStyle(Theme.Palette.subtleText)
+
+            Toggle("Set a start time", isOn: $step.hasTime)
+                .font(.subheadline)
+            if step.hasTime {
+                DatePicker("Starts at", selection: $step.time, displayedComponents: .hourAndMinute)
+                    .font(.subheadline)
             }
+
+            Stepper("Duration: \(step.duration) min", value: $step.duration, in: 5...240, step: 5)
+                .font(.subheadline)
         }
-        .padding(.vertical, Theme.Spacing.xs)
+        .padding(.vertical, Theme.Spacing.sm)
     }
 }
 
